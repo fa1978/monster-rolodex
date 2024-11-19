@@ -52,7 +52,7 @@ useEffect(()=>{
 
   return (
     <div className="App">
-        <h1 className='app-title'>Monsetr Rolodex</h1>
+        <h1 className='app-title'>{title}</h1>
         <SearchBox onChangeHandler={onsearchChange} 
                    placeholder={'search-monster'} 
                    className={'monster-search'} />
