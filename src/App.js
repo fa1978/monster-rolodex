@@ -1,112 +1,119 @@
 
 import './App.css';
-import Auth from './components/auth'
-import {db,auth} from './config/firebase'
-import {useEffect, useState} from 'react' ;
-import {getDocs,collection,addDoc,deleteDoc,doc,updateDoc} from 'firebase/firestore'
+//import { Component } from 'react';  // this nedd i Class component 
+import { useState,useEffect } from 'react';
+import CardList from './components/card-list/card-list.component.jsx' ;
+import SearchBox from './components/search-box/search-box.component.jsx';
+
+///Functional Component
+
 
 const App=()=>{
 
-    const [movieList,setMovieList]=useState([]) ;
+  const [searchField,setsearchField]  = useState('');
+  const [title,setTitle]=useState('');
+  const [monsters,setMonsters]  = useState([]);
+  const [filterdMonsters,setfilterdMonsters]=useState(monsters) ;
 
-    const moviesCollectionRef=collection(db,"movies") ;
+   console.log('renderd') ;
 
-////////////////
-//create New movie 
-  const [newMovieTitle,setNewMovieTitle]=useState("") ;
-  const [newReleaseDate,setNewReleaseDate]=useState(0) ;
-  const [isNewMovieOscar,setIsNewMovieOscar]=useState(false) ;
-
-  ///////
-  const [updatedTitle,setUpdatedTitle]=useState("");
+  useEffect(()=>{
     
+     fetch('https://jsonplaceholder.typicode.com/users').then(response=>  response.json()
+  ).then(users=>
+    setMonsters(users)
+)},[]) ;
 
-  const getMovieList=async ()=>
-    {
-       try {const data = await getDocs(moviesCollectionRef) ;
-           console.log(data) ;
-           const filteredData=data.docs.map((doc)=>({
-               ...doc.data(),
-               id:doc.id
-           }))
-           console.log(filteredData) ;
-           setMovieList(filteredData) ;
-       }
-       catch (error){console.log(error.message)}
-       
-    } ;  
+useEffect(()=>{
+  const newfilterdMonsters = monsters.filter((monster)=>{
+    return monster.name.toLocaleLowerCase().includes(searchField)
+  });
+  setfilterdMonsters(newfilterdMonsters) ;
+},[monsters,searchField])
 
-    const deleteMovie=async (id)=>{
-        const movieDoc=doc(db,"movies",id) ;
+  
 
-        try {
-            await deleteDoc(movieDoc);
-            getMovieList() ;
 
-        }
-        catch(err){
-            console.error(err) ;
-        }
-    }
+  const onsearchChange=(event)=>{
+    console.log(event.target.value) ;
+      const searchFieldString = event.target.value.toLocaleLowerCase();
+          setsearchField(searchFieldString) ;
+      
+  }
 
-    const updateMovieTitle=async (id)=>{
-        const movieDoc=doc(db,"movies",id) ;
- 
-        try {
-            await updateDoc(movieDoc,{title:updatedTitle});
-            getMovieList() ;
+  const ontitleChange=(event)=>{
+    console.log(event.target.value) ;
+      const searchFieldString = event.target.value.toLocaleLowerCase();
+          setTitle(searchFieldString) ;
+      
+  }
 
-        }
-        catch(err){
-            console.error(err) ;
-        }
-    }
-  useEffect(()=>
-        { 
-           
-                 getMovieList() ;
-       },[]) ;
+  
 
-       const onSubmitMovie= async ()=>{
-        try {
-   
-        await addDoc(moviesCollectionRef,{title:newMovieTitle,
-                                         releaseDate:newReleaseDate,
-                                         Oscar:isNewMovieOscar,
-                                         userId:auth?.currentUser?.uid,}) ;
-        console.log('done')
-        getMovieList() ;
-        }
-        catch (err){
-            console.error(err );
-        }
+  return (
+    <div className="App">
+        <h1 className='app-title'>{title}</h1>
+        <SearchBox onChangeHandler={onsearchChange} 
+                   placeholder={'search-monster'} 
+                   className={'monster-search'} />
 
-       
-    }
-    return (
-        <div>
-           <Auth />
-           <div>
-             <input placeholder='Movie title..' onChange={(e)=>setNewMovieTitle(e.target.value)}/>
-             <input placeholder='Release Date...' type='number' onChange={(e)=>setNewReleaseDate(Number(e.target.value))}/>
-             <input type='checkbox' checked={isNewMovieOscar} onChange={(e)=>setIsNewMovieOscar(e.target.checked)}/>
-             <label> recive Oscar</label>
-             <button onClick={onSubmitMovie}> submit movie</button>
-           </div>
-           <div>
-            {movieList.map((movie)=>(
-                <div>
-                <h1 style={{color: movie.Oscar  ?"green":"red"}}>{movie.title}</h1>
-                <p>Date:{movie.releaseDate}</p>
-                
-                <button onClick={()=>deleteMovie(movie.id)}>Delete Movie</button>
-                <input placeholder='new title...' onChange={(e)=>setUpdatedTitle(e.target.value)} />
-                <button onClick={()=>updateMovieTitle(movie.id)}>update Title of movie</button>
-                </div> 
-            ))}
-           </div>
-        </div>
-    )
+        <br></br>
+
+        <SearchBox onChangeHandler={ontitleChange} 
+                   placeholder={'tiset-title'} 
+                   className={'box-search'} />
+
+        <CardList  monsters={filterdMonsters } />
+    </div>
+  )
 }
 
-export default App ;
+/// ----- Class Compnent
+/*class App extends Component {
+ 
+  constructor(){
+    super();
+    this.state={
+      monsters:[],
+      searchField:''
+       };
+  }
+
+  componentDidMount(){
+    fetch('https://jsonplaceholder.typicode.com/users').then(response=>  response.json()
+       ).then(users=>
+      this.setState(()=>{
+        return {monsters:users}
+      },()=>{console.log(this.state)}) 
+    ) ;
+  }
+
+  onsearchChange=(event)=>{
+    console.log(event.target.value) ;
+    const searchField = event.target.value.toLocaleLowerCase();
+    
+    this.setState(()=> {
+      
+      return {searchField} ;
+      });
+     }
+  render(){
+
+    const {monsters,searchField} = this.state ;
+    const {onsearchChange}=this ;
+    const filterdMonsters = monsters.filter((monster)=>{
+      return monster.name.toLocaleLowerCase().includes(searchField)
+    });
+    return (
+      <div className="App">
+        <h1 className='app-title'>Monsters Rolodex</h1>
+        <SearchBox onChangeHandler={onsearchChange} placeholder={'search-monster'} className={'monster-search'} />
+        <CardList  monsters={filterdMonsters } />
+
+      </div>
+    );  
+  }
+  
+}*/
+
+export default App;
